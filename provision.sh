@@ -2,7 +2,7 @@
 set -e
 
 # change hostname and password and expand filesystem
-sudo raspi-config nonint do_hostname %$HOST_NAME
+sudo raspi-config nonint do_hostname $HOST_NAME
 (echo $PASSWORD ; echo $PASSWORD) | sudo passwd pi
 sudo raspi-config nonint do_expand_rootfs
 
