@@ -1,0 +1,14 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: nfs-client-provisioner
+  namespace: kube-system
+spec:
+  chart: stable/nfs-client-provisioner
+  targetNamespace: default
+  set:
+    image.repository: quay.io/external_storage/nfs-client-provisioner-arm
+    nfs.server: 192.168.0.103
+    nfs.path: /media/usb
+    storageClass.archiveOnDelete: "false"
