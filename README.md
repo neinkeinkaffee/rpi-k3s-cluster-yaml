@@ -2,8 +2,8 @@
 
 This repository contains scripts to provision Raspberry Pis running Raspbian OS.
 
-To provision from your laptop, make sure you have a default ssh key in `~/.ssh/id_rsa` (or create one by running `ssh-keygen` and accepting the defaults) and run 
+1. Run`ssh-keygen` and accept the defaults to create an ssh key in `~/.ssh/id_rsa`
+2. Run `run.sh` with a hostname and password for the Raspberry Pi specified. 
 ```
-HOST_NAME=kleener-punker PASSWORD=geheim ./run.sh
+HOST_NAME=pi1 PASSWORD=admin123 ./run.sh
 ```
-If HOST_NAME and PASSWORD aren't set, the script will prompt you for values.
