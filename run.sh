@@ -1,12 +1,13 @@
 #!/bin/bash
 set -ex
 
-# prompt for pi's host name and new password if not provided
-while [ -z $HOST_NAME ]; do
-  read -p "Please specify new hostname for Raspberry Pi: " HOST_NAME
-done
-while [ -z $PASSWORD ]; do
-  read -p "Please specify new password for Raspberry Pi: " PASSWORD
+HOST_NAME="${HOST_NAME:raspberrypi}"
+PASSWORD="${PASSWORD:raspberry}"
+ROUTER_IP="${ROUTER_IP:10.0.0.1}"
+
+# prompt for static IP if not provided
+while [ -z $STATIC_IP ]; do
+  read -p "Please specify static IP for Raspberry Pi: " STATIC_IP
 done
 
 # copy ssh key to pi and add the host key to .ssh/known_hosts
@@ -15,8 +16,8 @@ ssh-keyscan raspberrypi.local >> ~/.ssh/known_hosts
 echo raspberry | sshpass ssh-copy-id -f pi@raspberrypi.local
 
 set +e
-export HOST_NAME=$HOST_NAME PASSWORD=$PASSWORD
-ENV_VARS='$HOST_NAME:$PASSWORD'
+export HOST_NAME=$HOST_NAME PASSWORD=$PASSWORD STATIC_IP=$STATIC_IP ROUTER_IP=$ROUTER_IP
+ENV_VARS='$HOST_NAME:$PASSWORD:$STATIC_IP:$ROUTER_IP'
 envsubst "$ENV_VARS" < provision.sh | ssh pi@raspberrypi.local sh -
 #set -e
 set +x
@@ -30,5 +31,7 @@ echo
 set -ex
 
 # copy ssh key to pi and add the host key to .ssh/known_hosts
-sed -i '' '/^'"$HOST_NAME"'/d' ~/.ssh/known_hosts
+#sudo sed -i '.bkp' '/^'"$HOST_NAME"'/d' /etc/hosts
+#echo "$STATIC_IP  $HOST_NAME" | sudo tee -a /etc/hosts
+sed -i '.bkp' '/^'"$HOST_NAME"'/d' ~/.ssh/known_hosts
 ssh-keyscan $HOST_NAME >> ~/.ssh/known_hosts
