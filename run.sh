@@ -25,7 +25,5 @@ echo
 set -ex
 
 # copy ssh key to pi and add the host key to .ssh/known_hosts
-#sudo sed -i '.bkp' '/^'"$HOST_NAME"'/d' /etc/hosts
-#echo "$STATIC_IP  $HOST_NAME" | sudo tee -a /etc/hosts
 sed -i '.bkp' '/^'"$HOST_NAME"'/d' ~/.ssh/known_hosts
 ssh-keyscan $HOST_NAME >> ~/.ssh/known_hosts
