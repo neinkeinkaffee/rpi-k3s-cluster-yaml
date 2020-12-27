@@ -5,10 +5,11 @@ metadata:
   name: nfs-client-provisioner
   namespace: kube-system
 spec:
-  chart: stable/nfs-client-provisioner
+  chart: nfs-client-provisioner
+  repo: https://charts.helm.sh/stable
   targetNamespace: default
   set:
     image.repository: quay.io/external_storage/nfs-client-provisioner-arm
-    nfs.server: 192.168.0.103
-    nfs.path: /media/usb
+    nfs.server: 10.0.0.1
+    nfs.path: /mnt/sda1
     storageClass.archiveOnDelete: "false"
