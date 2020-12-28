@@ -15,3 +15,57 @@ ssh pi@pi0 "curl -sfL https://get.k3s.io | sh -"
 # To install on agent nods and join 
 ssh pi@pi1 "curl -sfL https://get.k3s.io | K3S_TOKEN=$(ssh pi@pi0 sudo cat /var/lib/rancher/k3s/server/node-token) K3S_URL=https://pi0:6443 sh -"
 ```
+4. Install NFS server, e.g. on router running [OpenWRT](https://openwrt.org/docs/guide-user/services/nas/nfs.server) or on [Raspberry Pi](https://pimylifeup.com/raspberry-pi-nfs/) with USB flash drive mounted
+```
+# on OpenWRT
+# install nfs-kernel-server
+opkg update
+opkg install nfs-kernel-server
+# replace 1000 by the id of a user that you gave read-write access to the mount directory
+echo "/mnt/sda1 *(rw,all_squash,insecure,async,no_subtree_check,anonuid=1000,anongid=1000)" >> /etc/exports
+```
+5. Deploy nfs-client-provisioner
+
+## Mount USB flash drive on OpenWRT
+
+(Source: https://openwrt.org/docs/guide-user/storage/usb-drives-quickstart)
+
+1. Use your **laptop/desktop computer** to format your USB device. Use the default name and format options. This prepares the USB drive for the process below, which will erase those settings (again). Warning: This initial formatting will erase the entire USB drive.
+
+2. SSH into the router and enter the following commands into the SSH window.
+
+3. Get the required packages: You may see error messages about installing kmod-usb3 on certain routers. These can be ignored since the hardware may not support USB3.
+```
+opkg update && opkg install block-mount e2fsprogs kmod-fs-ext4 kmod-usb-storage kmod-usb2 kmod-usb3
+```
+
+4. Enter `ls -al /dev/sd*` to show the name of all attached USB devices. The list may be empty if there are no USB devices. **/dev/sda** is the first USB device; **/dev/sdb** is the second, and so on. **/dev/sda1** is the first partition on the first device; **/dev/sda2** is the second partition, etc.
+
+5. Insert the USB drive into your router. Enter `ls -al /dev/sd*` again, and this time you should see a new `/dev/sdXX` device.
+```
+root@OpenWrt:~# ls -al /dev/sd*
+brw-------    1 root     root        8,   0 Feb  4 15:13 /dev/sda
+brw-------    1 root     root        8,   1 Feb  4 14:06 /dev/sda1
+```
+
+6. Make an ext4 filesystem on the USB device using the device name you just discovered. Be certain you enter the proper device name - this step will completely erase the device.
+```
+mkfs.ext4 /dev/sda1
+```
+
+7. Create the fstab config file based on all the block devices found. This command writes the current state of all block devices, including USB drives, into the `/etc/config/fstab` file.
+```
+block detect | uci import fstab
+```
+
+8. Update the fstab config file to mount all drives at startup. `/dev/sda` is `mount[0]`, `/dev/sdb` is `mount[1]`, etc. If you have more than one USB device attached, substitute the proper index (0 or 1 or ...) as needed. This command mounts all drives - named or anonymous.
+```
+uci set fstab.@mount[0].enabled='1' && uci set fstab.@global[0].anon_mount='1' && uci commit fstab
+```
+
+9. Mount the device. Automount is enabled on boot.
+```
+/etc/init.d/fstab boot
+```
+
+10. You're done! This procedure has mounted the drive at `/mnt/sdXX` (whatever the device name was.) The drive is ready to save data at that part of the filesystem. 
