@@ -14,17 +14,37 @@ ssh pi@pi0 "curl -sfL https://get.k3s.io | sh -"
 
 # To install on agent nods and join 
 ssh pi@pi1 "curl -sfL https://get.k3s.io | K3S_TOKEN=$(ssh pi@pi0 sudo cat /var/lib/rancher/k3s/server/node-token) K3S_URL=https://pi0:6443 sh -"
+
+# To retrieve kubeconfig
+ssh pi@pi0 sudo cat /etc/rancher/k3s/k3s.yaml | sed -e s/127.0.0.1/pi0/g > ~/kubeconfig
 ```
-4. Install NFS server, e.g. on router running [OpenWRT](https://openwrt.org/docs/guide-user/services/nas/nfs.server) or on [Raspberry Pi](https://pimylifeup.com/raspberry-pi-nfs/) with USB flash drive mounted
+4. Deploy nfs-client-provisioner and test whether data persists across pod restarts
 ```
-# on OpenWRT
-# install nfs-kernel-server
-opkg update
-opkg install nfs-kernel-server
-# replace 1000 by the id of a user that you gave read-write access to the mount directory
-echo "/mnt/sda1 *(rw,all_squash,insecure,async,no_subtree_check,anonuid=1000,anongid=1000)" >> /etc/exports
+kubectl apply -f kubernetes/nfs-client-provisioner/nfs-client-provisioner.yaml
+
+# To test whether data persists across pod recreation
+# 1. deploy test pod and pvc
+kubectl apply -f kubernetes/nfs-client-provisioner/test-pod-and-nfs-client-pvc.yaml
+kubectl get pods
+# NAME                                     READY   STATUS    RESTARTS   AGE
+# test-pod-5649c97974-zfwmm                1/1     Running   0          19s
+# 2. write data
+kubectl exec -it test-pod-5649c97974-zfwmm -- /bin/bash
+echo "hello, world" > /usr/share/nginx/html/index.html
+curl localhost
+# hello, world
+exit
+# 3. delete pod and observe how it is recreated
+kubectl delete test-pod-5649c97974-zfwmm
+# pod "test-pod-5649c97974-zfwmm" deleted
+kubectl get pods
+# NAME                                     READY   STATUS    RESTARTS   AGE
+# test-pod-5649c97974-xvgs6                1/1     Running   0          19s
+# 4. check whether the old data is still there
+kubectl exec -it test-pod-5649c97974-xvgs6 -- /bin/bash
+curl localhost
+# hello, world
 ```
-5. Deploy nfs-client-provisioner
 
 ## Mount USB flash drive on OpenWRT
 
@@ -69,3 +89,15 @@ uci set fstab.@mount[0].enabled='1' && uci set fstab.@global[0].anon_mount='1' &
 ```
 
 10. You're done! This procedure has mounted the drive at `/mnt/sdXX` (whatever the device name was.) The drive is ready to save data at that part of the filesystem. 
+
+## Install NFS server on OpenWRT
+
+Install an NFS server on a router running [OpenWRT](https://openwrt.org/docs/guide-user/services/nas/nfs.server) or alternatively on [Raspberry Pi](https://pimylifeup.com/raspberry-pi-nfs/) with USB flash drive mounted
+```
+# on OpenWRT
+# install nfs-kernel-server
+opkg update
+opkg install nfs-kernel-server
+# replace 1000 by the id of a user that you gave read-write access to the mount directory
+echo "/mnt/sda1 *(rw,all_squash,insecure,async,no_subtree_check,anonuid=1000,anongid=1000)" >> /etc/exports
+```
