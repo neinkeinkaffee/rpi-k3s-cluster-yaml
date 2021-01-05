@@ -101,3 +101,18 @@ opkg install nfs-kernel-server
 # replace 1000 by the id of a user that you gave read-write access to the mount directory
 echo "/mnt/sda1 *(rw,all_squash,insecure,async,no_subtree_check,anonuid=1000,anongid=1000)" >> /etc/exports
 ```
+
+## Run tinc in Docker
+
+The `docker` directory contains a Dockerfile that builds an image based on `jenserat/tinc` that has terraform and kubectl pre-installed. 
+
+```
+docker run -d \               
+    --name tinc \
+    --net=host \
+    --device=/dev/net/tun \
+    --cap-add NET_ADMIN \
+    --volume ~/tinc/rpinet:/etc/tinc \
+    --volume ~/pivpnkubeconfig:/kubeconfig \
+    tinc start -D
+```
